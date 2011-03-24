@@ -9,7 +9,11 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.utils.translation import ugettext as _
-from django.views.decorators.csrf import csrf_exempt
+from django.utils.http import urlquote
+try:
+	from django.views.decorators.csrf import csrf_exempt
+except ImportError:
+	from django.contrib.csrf.middleware import csrf_exempt
 
 from django.contrib.auth import REDIRECT_FIELD_NAME
 
@@ -139,7 +143,7 @@ def landing_page(request, orequest):
     request.session['OPENID_REQUEST'] = orequest
     login_url = settings.LOGIN_URL
     path = request.get_full_path()
-    url = '%s?%s=%s' % (login_url, REDIRECT_FIELD_NAME, path)
+    url = '%s?%s=%s' % (login_url, REDIRECT_FIELD_NAME, urlquote(path))
     return HttpResponseRedirect(url)
 
 def openid_is_authorized(request, identity_url, trust_root):
@@ -176,5 +180,6 @@ def openid_get_identity(request, identity_url):
         openids = request.user.openid_set.filter(default=True)
         if openids.count() == 1:
             return openids[0]
-        return request.user.openid_set.all()[0]
+        if request.user.openid_set.count() > 0:
+            return request.user.openid_set.all()[0]
     return None

@@ -2,6 +2,13 @@
 History
 =======
 
+v0.4
+----
+Released 2010-12-30.
+
+* CSRF enabled sites support (thx to Jannis).
+* SREG support (thx to Jannis).
+
 v0.3
 ----
 Released 2010-06-08.
@@ -43,4 +50,13 @@ Contributors
 
 * initial setup.py and MANIFEST.in
 
+`Jannis Leidel`_
+
+* code cleanup (tab2spaces, PEP8),
+* sreg support,
+* CSRF exempt for openid_server,
+* simplified host resolution,
+* ability to specify OPENID_PROVIDER_STORE in settings.
+
 .. _`Bruno Renié`: http://bitbucket.org/bruno
+.. _`Jannis Leidel`: http://bitbucket.org/jezdez
