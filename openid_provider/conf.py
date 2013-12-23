@@ -20,3 +20,8 @@ AX_DATA_CALLBACK = getattr(settings, 'OPENID_PROVIDER_AX_DATA_CALLBACK',
 AX_EXTENSION = getattr(settings, 'OPENID_PROVIDER_AX_EXTENSION', False)
 
 AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
+
+# RPs without relying party verification mechanisms will be each time
+# redirected to decide page, set to True to disable this:
+FAILED_DISCOVERY_AS_VALID = getattr(
+    settings, 'OPENID_FAILED_DISCOVERY_AS_VALID', False)

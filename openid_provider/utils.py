@@ -1,9 +1,12 @@
-# -*- coding: utf-8 -*-
-# vim: set ts=4 sw=4 fdm=indent : */
+# -*- coding: utf-8 -*- vim: set et ts=4 sw=4 :
 # some code from http://www.djangosnippets.org/snippets/310/ by simon
 # and from examples/djopenid from python-openid-2.2.4
+from hashlib import sha1
 from openid_provider import conf
 from openid.extensions import ax, sreg
+from openid.server.trustroot import verifyReturnTo
+from openid.yadis.discover import DiscoveryFailure
+from openid.fetchers import HTTPFetchingError
 
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.importlib import import_module
@@ -72,8 +75,26 @@ def get_store(request):
     try:
         store_class = import_module_attr(conf.STORE)
     except ImportError:
-        raise ImproperlyConfigured("OpenID store %r could not be imported" % conf.STORE)
+        raise ImproperlyConfigured(
+            "OpenID store %r could not be imported" % conf.STORE)
     # The FileOpenIDStore requires a path to save the user files.
     if conf.STORE == 'openid.store.filestore.FileOpenIDStore':
         return store_class(conf.FILESTORE_PATH)
     return store_class()
+
+def trust_root_validation(orequest):
+    """
+    OpenID specs 9.2.1: using realm for return url verification
+    """
+    try:
+        return verifyReturnTo(
+            orequest.trust_root, orequest.return_to) and "Valid" or "Invalid"
+    except HTTPFetchingError:
+        return "Unreachable"
+    except DiscoveryFailure:
+        return "DISCOVERY_FAILED"
+
+def get_trust_session_key(orequest):
+    return 'OPENID_' + sha1(
+        orequest.trust_root + orequest.return_to).hexdigest()
+

@@ -23,14 +23,13 @@ from django.contrib.auth import REDIRECT_FIELD_NAME
 from openid.association import default_negotiator, encrypted_negotiator
 from openid.consumer.discover import OPENID_IDP_2_0_TYPE, OPENID_2_0_TYPE
 from openid.extensions import sreg, ax
-from openid.fetchers import HTTPFetchingError
 from openid.server.server import Server, BROWSER_REQUEST_MODES
-from openid.server.trustroot import verifyReturnTo
-from openid.yadis.discover import DiscoveryFailure
 from openid.yadis.constants import YADIS_CONTENT_TYPE
 
 from openid_provider import conf
-from openid_provider.utils import add_sreg_data, add_ax_data, get_store
+from openid_provider.utils import add_sreg_data, add_ax_data, get_store, \
+    trust_root_validation, get_trust_session_key
+from openid_provider.models import TrustedRoot
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +79,19 @@ def openid_server(request):
         openid = openid_is_authorized(request, orequest.identity,
                                       orequest.trust_root)
 
-        if openid is not None:
+        # verify return_to:
+        trust_root_valid = trust_root_validation(orequest)
+        validated = False
+
+        if conf.FAILED_DISCOVERY_AS_VALID:
+            if trust_root_valid == 'DISCOVERY_FAILED':
+                validated = True
+        else:
+            # if in decide already took place, set as valid:
+            if request.session.get(get_trust_session_key(orequest), False):
+                validated = True
+
+        if openid is not None and (validated or trust_root_valid == 'Valid'):
             id_url = request.build_absolute_uri(
                 reverse('openid-provider-identity', args=[openid.openid]))
             oresponse = orequest.answer(True, identity=id_url)
@@ -90,6 +101,7 @@ def openid_server(request):
             raise Exception('checkid_immediate mode not supported')
         else:
             request.session['OPENID_REQUEST'] = orequest
+            request.session['OPENID_TRUSTROOT_VALID'] = trust_root_valid
             logger.debug('redirecting to decide page')
             return HttpResponseRedirect(reverse('openid-provider-decide'))
     else:
@@ -135,30 +147,28 @@ def openid_decide(request):
     # If they are NOT logged in, show the landing page
     """
     orequest = request.session.get('OPENID_REQUEST')
+    trust_root_valid = request.session.get('OPENID_TRUSTROOT_VALID')
 
     if not request.user.is_authenticated():
         return landing_page(request, orequest)
 
     openid = openid_get_identity(request, orequest.identity)
     if openid is None:
-        return error_page(request, "You are signed in but you don't have OpenID here!")
+        return error_page(
+            request, "You are signed in but you don't have OpenID here!")
 
     if request.method == 'POST' and request.POST.get('decide_page', False):
-        openid.trustedroot_set.create(trust_root=orequest.trust_root)
+        TrustedRoot.objects.get_or_create(
+            openid=openid, trust_root=orequest.trust_root)
+        if not conf.FAILED_DISCOVERY_AS_VALID:
+            request.session[get_trust_session_key(orequest)] = True
         return HttpResponseRedirect(reverse('openid-provider-root'))
-
-    # verify return_to of trust_root
-    try:
-        trust_root_valid = verifyReturnTo(orequest.trust_root, orequest.return_to) and "Valid" or "Invalid"
-    except HTTPFetchingError:
-        trust_root_valid = "Unreachable"
-    except DiscoveryFailure:
-        trust_root_valid = "DISCOVERY_FAILED"
 
     return render_to_response('openid_provider/decide.html', {
         'title': _('Trust this site?'),
         'trust_root': orequest.trust_root,
         'trust_root_valid': trust_root_valid,
+        'return_to': orequest.return_to,
         'identity': orequest.identity,
     }, context_instance=RequestContext(request))
 
@@ -225,7 +235,8 @@ def openid_is_authorized(request, identity_url, trust_root):
 def openid_get_identity(request, identity_url):
     """
     Select openid based on claim (identity_url).
-    If none was claimed identity_url will be 'http://specs.openid.net/auth/2.0/identifier_select'
+    If none was claimed identity_url will be
+    'http://specs.openid.net/auth/2.0/identifier_select'
     - in that case return default one
     - if user has no default one, return any
     - in other case return None!
