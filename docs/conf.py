@@ -55,3 +55,14 @@ latex_elements = {
 
 # If false, no module index is generated.
 #latex_use_modindex = True
+
+from docutils.parsers.rst import roles
+
+issues_url = 'https://bitbucket.org/romke/django_openid_provider/issue/'
+
+def issue_role(role, rawtext, text, lineno, inliner, options={}, content={}):
+    from docutils import nodes, utils
+    ref = "%s/%s/" % (issues_url, text)
+    node = nodes.reference(rawtext, utils.unescape('#%s' % text), refuri=ref, **options)
+    return [node],[]
+roles.register_canonical_role('issue', issue_role)
