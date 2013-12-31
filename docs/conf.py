@@ -59,7 +59,7 @@ latex_elements = {
 
 from docutils.parsers.rst import roles
 
-issues_url = 'https://bitbucket.org/romke/django_openid_provider/issue/'
+issues_url = 'https://bitbucket.org/romke/django_openid_provider/issue'
 
 def issue_role(role, rawtext, text, lineno, inliner, options={}, content={}):
     from docutils import nodes, utils

@@ -4,8 +4,11 @@ History
 
 v0.5
 ----
+Released 2013-12-23.
 
-* Security enchancement: `OpenID Authentication 2.0 9.2.1`_ was implemented, fixes :issue:`4`.
+* Security enchancement:
+  `OpenID Authentication 2.0 9.2.1 <http://openid.net/specs/openid-authentication-2_0.html#rfc.section.9.2.1>`_
+  was implemented, fixes :issue:`4`.
 * Fixed landing page view to handle redirect URL GET params correctly.
 * Added OPENID_PROVIDER_SREG_DATA_CALLBACK setting for custom SREG callback
   functions.
@@ -49,12 +52,9 @@ Credits
 
 Django OpenID Provider is developed by Roman Barczyński based on code from:
 
-- simon (`django code snippets`_)
+- simon (`django code snippets <http://www.djangosnippets.org/snippets/310/>`_)
 - python-openid-2.2.4 examples/djopenid
 
-.. _`django code snippets`: http://www.djangosnippets.org/snippets/310/
-.. _`OpenID Authetication 2.0 9.2.1`:
-   http://openid.net/specs/openid-authentication-2_0.html#rfc.section.9.2.1
 
 Contributors
 ------------
