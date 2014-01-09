@@ -55,7 +55,7 @@ def openid_server(request):
     querydict = dict(request.REQUEST.items())
     orequest = server.decodeRequest(querydict)
     if not orequest:
-        orequest = request.session.get('OPENID_REQUEST', None)
+        orequest = server.decodeRequest(request.session.get('OPENID_REQUEST', None))
         if orequest:
             # remove session stored data:
             del request.session['OPENID_REQUEST']
