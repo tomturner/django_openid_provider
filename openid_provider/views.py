@@ -28,7 +28,7 @@ from openid.yadis.constants import YADIS_CONTENT_TYPE
 
 from openid_provider import conf
 from openid_provider.utils import add_sreg_data, add_ax_data, get_store, \
-    trust_root_validation, get_trust_session_key
+    trust_root_validation, get_trust_session_key, prep_response
 from openid_provider.models import TrustedRoot
 
 logger = logging.getLogger(__name__)
@@ -110,20 +110,8 @@ def openid_server(request):
         add_sreg_data(request, orequest, oresponse)
         if conf.AX_EXTENSION:
             add_ax_data(request, orequest, oresponse)
-    # Convert a webresponse from the OpenID library in to a Django HttpResponse
-    webresponse = server.encodeResponse(oresponse)
-    if webresponse.code == 200 and orequest.mode in BROWSER_REQUEST_MODES:
-        response = render_to_response('openid_provider/response.html', {
-            'body': webresponse.body,
-        }, context_instance=RequestContext(request))
-        logger.debug('rendering browser response')
-    else:
-        response = HttpResponse(webresponse.body)
-        response.status_code = webresponse.code
-        for key, value in webresponse.headers.items():
-            response[key] = value
-        logger.debug('rendering raw response')
-    return response
+
+    return prep_response(request, orequest, oresponse, server)
 
 def openid_xrds(request, identity=False, id=None):
     if identity:
@@ -158,11 +146,16 @@ def openid_decide(request):
             request, "You are signed in but you don't have OpenID here!")
 
     if request.method == 'POST' and request.POST.get('decide_page', False):
-        TrustedRoot.objects.get_or_create(
-            openid=openid, trust_root=orequest.trust_root)
-        if not conf.FAILED_DISCOVERY_AS_VALID:
-            request.session[get_trust_session_key(orequest)] = True
-        return HttpResponseRedirect(reverse('openid-provider-root'))
+        if request.POST.get('allow', False):
+            TrustedRoot.objects.get_or_create(
+                openid=openid, trust_root=orequest.trust_root)
+            if not conf.FAILED_DISCOVERY_AS_VALID:
+                request.session[get_trust_session_key(orequest)] = True
+            return HttpResponseRedirect(reverse('openid-provider-root'))
+
+        oresponse = orequest.answer(False)
+        logger.debug('orequest.answer(False)')
+        return prep_response(request, orequest, oresponse)
 
     return render_to_response('openid_provider/decide.html', {
         'title': _('Trust this site?'),

@@ -4,12 +4,20 @@
 from hashlib import sha1
 from openid_provider import conf
 from openid.extensions import ax, sreg
+from openid.server.server import Server, BROWSER_REQUEST_MODES
 from openid.server.trustroot import verifyReturnTo
 from openid.yadis.discover import DiscoveryFailure
 from openid.fetchers import HTTPFetchingError
 
 from django.core.exceptions import ImproperlyConfigured
+from django.core.urlresolvers import reverse
+from django.http import HttpResponse
+from django.shortcuts import render_to_response
 from django.utils.importlib import import_module
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 def import_module_attr(path):
     package, module = path.rsplit('.', 1)
@@ -97,4 +105,25 @@ def trust_root_validation(orequest):
 def get_trust_session_key(orequest):
     return 'OPENID_' + sha1(
         orequest.trust_root + orequest.return_to).hexdigest()
+
+def prep_response(request, orequest, oresponse, server=None):
+    # Convert a webresponse from the OpenID library in to a Django HttpResponse
+
+    if not server:
+        server = Server(get_store(request),
+            op_endpoint=request.build_absolute_uri(
+                reverse('openid-provider-root')))
+    webresponse = server.encodeResponse(oresponse)
+    if webresponse.code == 200 and orequest.mode in BROWSER_REQUEST_MODES:
+        response = render_to_response('openid_provider/response.html', {
+            'body': webresponse.body,
+        }, context_instance=RequestContext(request))
+        logger.debug('rendering browser response')
+    else:
+        response = HttpResponse(webresponse.body)
+        response.status_code = webresponse.code
+        for key, value in webresponse.headers.items():
+            response[key] = value
+        logger.debug('rendering raw response')
+    return response
 
