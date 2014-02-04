@@ -2,6 +2,12 @@
 History
 =======
 
+tip
+---
+
+* When pressing "No" on decide page authentication is now cancelled as it
+  supposed to be, fixes :issue:`6`.
+
 v0.5
 ----
 Released 2013-12-23.
