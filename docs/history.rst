@@ -7,6 +7,10 @@ tip
 
 * When pressing "No" on decide page authentication is now cancelled as it
   supposed to be, fixes :issue:`6`.
+* Added South migrations
+
+  .. warning:: you must fake initial migration if you already have
+     working openid_provider installation.
 
 v0.5
 ----
