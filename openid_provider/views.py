@@ -41,8 +41,7 @@ def openid_server(request):
     """
     logger.debug('server request %s: %s',
                  request.method, request.POST or request.GET)
-    server = Server(get_store(request),
-        op_endpoint=request.build_absolute_uri(reverse('openid-provider-root')))
+    server = openid_get_server(request)
 
     if not request.is_secure():
         # if request is not secure allow only encrypted association sessions
@@ -146,8 +145,7 @@ def openid_decide(request):
     # If user is logged in, ask if they want to trust this trust_root
     # If they are NOT logged in, show the landing page
     """
-    server = Server(get_store(request),
-	op_endpoint=request.build_absolute_uri(reverse('openid-provider-root')))
+    server = openid_get_server(request)
     orequest = server.decodeRequest(request.session.get('OPENID_REQUEST'))
     trust_root_valid = request.session.get('OPENID_TRUSTROOT_VALID')
 
@@ -255,3 +253,10 @@ def openid_get_identity(request, identity_url):
         if request.user.openid_set.count() > 0:
             return request.user.openid_set.all()[0]
     return None
+
+
+def openid_get_server(request):
+    return Server(
+        get_store(request),
+        op_endpoint=request.build_absolute_uri(
+            reverse('openid-provider-root')))

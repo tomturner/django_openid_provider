@@ -2,6 +2,12 @@
 History
 =======
 
+tip
+---
+
+* Django 1.6 compatibility (use openid toPostArgs/decodeRequest internal
+  serializer).
+
 v0.5
 ----
 Released 2013-12-23.
