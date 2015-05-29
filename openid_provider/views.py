@@ -120,11 +120,18 @@ def openid_xrds(request, identity=False, id=None):
         if conf.AX_EXTENSION:
             types.append(ax.AXMessage.ns_uri)
     endpoints = [request.build_absolute_uri(reverse('openid-provider-root'))]
-    return render_to_response('openid_provider/xrds.xml', {
+    args = 'openid_provider/xrds.xml', {
         'host': request.build_absolute_uri('/'),
         'types': types,
-        'endpoints': endpoints,
-    }, context_instance=RequestContext(request), mimetype=YADIS_CONTENT_TYPE)
+        'endpoints': endpoints }
+    try:
+        return render_to_response(*args, 
+                                  context_instance=RequestContext(request), 
+                                  content_type=YADIS_CONTENT_TYPE)
+    except TypeError:  # Django<1.7 will raise TypeError due to 'content_type'
+        return render_to_response(*args,
+                                  context_instance=RequestContext(request), 
+                                  mimetype=YADIS_CONTENT_TYPE)
 
 def openid_decide(request):
     """
