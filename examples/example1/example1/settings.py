@@ -21,7 +21,6 @@ PROJECT_DIR = os.path.join(BASE_DIR, os.pardir)
 OPEN_ID_APPS_DIR = os.path.join(PROJECT_DIR, os.pardir)
 sys.path.insert(0, OPEN_ID_APPS_DIR)
 OPEN_ID_TEMPLATES = os.path.join(OPEN_ID_APPS_DIR,'openid_provider','templates')
-print OPEN_ID_TEMPLATES
 
 
 # Quick-start development settings - unsuitable for production
