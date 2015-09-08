@@ -152,6 +152,16 @@ def openid_decide(request):
         return error_page(
             request, "You are signed in but you don't have OpenID here!")
 
+    # Unconditionally allow access to a site without prompting the
+    # user if the trusted root contains the trusted domain name
+    # configured in the settings
+    if settings.TRUSTED_DOMAIN in orequest.trust_root:
+        TrustedRoot.objects.get_or_create(
+            openid=openid, trust_root=orequest.trust_root)
+        if not conf.FAILED_DISCOVERY_AS_VALID:
+            request.session[get_trust_session_key(orequest)] = True
+        return HttpResponseRedirect(reverse('openid-provider-root'))
+
     if request.method == 'POST' and request.POST.get('decide_page', False):
         if request.POST.get('allow', False):
             TrustedRoot.objects.get_or_create(
